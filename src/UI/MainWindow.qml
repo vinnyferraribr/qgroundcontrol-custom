@@ -339,7 +339,7 @@ ApplicationWindow {
                         SubMenuButton {
                             height:             toolSelectDialog._toolButtonHeight
                             Layout.fillWidth:   true
-                            text:               qsTr("Plan Flight")
+                            text:               qsTr("Plano de Voo")
                             imageResource:      "/qmlimages/Plan.svg"
                             onClicked: {
                                 if (mainWindow.allowViewSwitch()) {

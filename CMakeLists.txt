@@ -46,6 +46,24 @@ project(${QGC_APP_NAME}
     LANGUAGES C CXX
 )
 
+if(ANDROID)
+    set(QML_IMPORT_PATH
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/src/QmlControls/QGroundControl
+        ${CMAKE_SOURCE_DIR}/src/QmlControls/Viewer3D
+        ${CMAKE_SOURCE_DIR}/src/QmlControls/Viewer3D/Models3D
+        ${CMAKE_SOURCE_DIR}/src/QmlControls/Viewer3D/Models3D/Drones
+        ${CMAKE_SOURCE_DIR}/src/AutoPilotPlugins
+        ${CMAKE_SOURCE_DIR}/src/PlanView
+        ${CMAKE_SOURCE_DIR}/src/FlightMap
+        ${CMAKE_SOURCE_DIR}/src/Settings
+        ${CMAKE_SOURCE_DIR}/src/MAVLink
+    )
+
+    set(QT_QML_IMPORT_PATH "${QML_IMPORT_PATH}")
+    set(QT_QML_ROOT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src")
+endif()
+
 if(APPLE AND NOT IOS)
     set(MACOS TRUE)
 
@@ -298,6 +316,21 @@ qt_add_executable(${CMAKE_PROJECT_NAME}
     MACOSX_BUNDLE
     ${QGC_RESOURCES}
 )
+
+if(NOT_ANDROID)
+    target_link_libraries(${CMAKE_PROJECT_NAME}
+        PRIVATE
+            Qt6::WaylandClient
+            /usr/local/lib/libwayland-client.so
+    )
+endif()
+
+if(ANDROID)
+    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
+        QT_QML_IMPORT_PATH "${QML_IMPORT_PATH}"
+        QT_QML_ROOT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    )
+endif()
 
 if(WIN32)
     # CPMAddPackage(

@@ -18,6 +18,11 @@
 #include <sys/signal.h>
 #include <sys/socket.h>
 
+#ifdef __linux__
+#include <unistd.h>
+#include <fcntl.h>
+#endif
+
 QGC_LOGGING_CATEGORY(SignalHandlerLog, "qgc.utilities.signalhandler")
 
 int SignalHandler::sigIntFd[2] = {0, 0};

@@ -209,7 +209,7 @@ QGCApplication::QGCApplication(int &argc, char *argv[], bool unitTesting, bool s
 #endif
 }
 
-void QGCApplication::setLanguage()
+/*void QGCApplication::setLanguage()
 {
     _locale = QLocale::system();
     qCDebug(QGCApplicationLog) << "System reported locale:" << _locale << "; Name" << _locale.name() << "; Preffered (used in maps): " << (QLocale::system().uiLanguages().length() > 0 ? QLocale::system().uiLanguages()[0] : "None");
@@ -256,7 +256,67 @@ void QGCApplication::setLanguage()
     }
 
     emit languageChanged(_locale);
+}*/
+
+void QGCApplication::setLanguage()
+{
+    _locale = QLocale::system(); // padrão do sistema
+
+    QLocale::Language userLang = AppSettings::_qLocaleLanguageEarlyAccess();
+    if (userLang != QLocale::AnyLanguage) {
+        _locale = QLocale(userLang);
+    }
+
+    qCDebug(QGCApplicationLog) << "System reported locale:" << _locale << "; Name:" << _locale.name();
+
+    removeTranslator(JsonHelper::translator());
+    removeTranslator(&_qgcTranslatorSourceCode);
+    removeTranslator(&_qgcTranslatorQtLibs);
+
+    if (_locale.name() != "en_US") {
+        QLocale::setDefault(_locale);
+
+                // Qt base
+        if (_qgcTranslatorQtLibs.load("qtbase_" + _locale.name(), QCoreApplication::applicationDirPath() + "/translations")) {
+            installTranslator(&_qgcTranslatorQtLibs);
+        } else {
+            qCWarning(QGCApplicationLog) << "Failed to load qtbase_" + _locale.name();
+        }
+
+                // qgc_source (interno)
+        if (_qgcTranslatorSourceCode.load(_locale, QLatin1String("qgc_source_"), "", ":/i18n")) {
+            installTranslator(&_qgcTranslatorSourceCode);
+        } else {
+            qCWarning(QGCApplicationLog) << "Failed to load qgc_source_" + _locale.name();
+        }
+
+                // qgc (sua tradução customizada externa)
+        QString translationsPath = QCoreApplication::applicationDirPath() + "/translations";
+        QTranslator* userQGCTranslator = new QTranslator;
+        if (userQGCTranslator->load("qgc_source_" + _locale.name(), translationsPath)) {
+            qDebug() << "Loaded qgc_source_" + _locale.name() << "from" << translationsPath;
+            installTranslator(userQGCTranslator);
+        } else {
+            qWarning() << "Failed to load qgc_source_" + _locale.name() << "from" << translationsPath;
+        }
+
+                // JSON (opcional, só se estiver ativado)
+        /*
+        if (JsonHelper::translator()->load(_locale, QLatin1String("qgc_json_"), "", ":/i18n")) {
+            installTranslator(JsonHelper::translator());
+        } else {
+            qCWarning(QGCApplicationLog) << "Error loading qgc_json_" << _locale.name();
+        }
+        */
+    }
+
+    if (_qmlAppEngine) {
+        _qmlAppEngine->retranslate();
+    }
+
+    emit languageChanged(_locale);
 }
+
 
 QGCApplication::~QGCApplication()
 {
