@@ -17287,7 +17287,7 @@ Pairar e capturar imagem</translation>
     <message>
       <location filename="../src/FlightDisplay/TerrainProgress.qml" line="69"/>
       <source>Terrain Load Progress</source>
-      <translation>Progresso no Carregamento do Terreno</translation>
+      <translation>Carregando dados de terreno</translation>
     </message>
     <message>
       <location filename="../src/FlightDisplay/TerrainProgress.qml" line="87"/>

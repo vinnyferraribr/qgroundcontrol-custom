@@ -342,13 +342,14 @@ QVariantList QGCCorePlugin::firstRunPromptsToShow()
     return rgVarIdsToShow;
 }
 
+//Aqui é a lógica do prompt das unidades.
 QString QGCCorePlugin::firstRunPromptResource(int id) const
 {
     switch (id) {
     case kUnitsFirstRunPromptId:
-        return QStringLiteral("/FirstRunPromptDialogs/UnitsFirstRunPrompt.qml");
+        return QString(); //return QStringLiteral("/FirstRunPromptDialogs/UnitsFirstRunPrompt.qml"); //tela de unidades
     case kOfflineVehicleFirstRunPromptId:
-        return QStringLiteral("/FirstRunPromptDialogs/OfflineVehicleFirstRunPrompt.qml");
+        return QString(); //return QStringLiteral("/FirstRunPromptDialogs/OfflineVehicleFirstRunPrompt.qml");  //informacao do veiculo
     default:
         return QString();
     }

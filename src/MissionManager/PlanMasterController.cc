@@ -8,23 +8,26 @@
  ****************************************************************************/
 
 #include "PlanMasterController.h"
+#include "GranelPlanCreator.h"
 #include "QGCApplication.h"
 #include "QGCCorePlugin.h"
 #include "MultiVehicleManager.h"
+#include "SurveyPlanCreator.h"
 #include "Vehicle.h"
 #include "SettingsManager.h"
 #include "AppSettings.h"
 #include "JsonHelper.h"
 #include "MissionManager.h"
 #include "KMLPlanDomDocument.h"
-#include "SurveyPlanCreator.h"
 #include "StructureScanPlanCreator.h"
-#include "CorridorScanPlanCreator.h"
-#include "BlankPlanCreator.h"
+//#include "CorridorScanPlanCreator.h"
+//#include "BlankPlanCreator.h"
 #include "QmlObjectListModel.h"
 #include "GeoFenceManager.h"
 #include "RallyPointManager.h"
 #include "QGCLoggingCategory.h"
+#include "TubetesPlanCreator.h"
+
 
 #include <QtCore/QJsonDocument>
 #include <QtCore/QFileInfo>
@@ -618,24 +621,27 @@ void PlanMasterController::_updateOverallDirty(void)
     }    
 }
 
+//ALLAN
 void PlanMasterController::_updatePlanCreatorsList(void)
 {
     if (!_flyView) {
         if (!_planCreators) {
             _planCreators = new QmlObjectListModel(this);
-            _planCreators->append(new BlankPlanCreator(this, this));
+            //_planCreators->append(new BlankPlanCreator(this, this));
             _planCreators->append(new SurveyPlanCreator(this, this));
-            _planCreators->append(new CorridorScanPlanCreator(this, this));
+            //_planCreators->append(new CorridorScanPlanCreator(this, this));
+            _planCreators->append(new TubetesPlanCreator(this, this));
             emit planCreatorsChanged(_planCreators);
         }
 
         if (_managerVehicle->fixedWing()) {
-            if (_planCreators->count() == 4) {
+            if (_planCreators->count() == 3) { //era 4
                 _planCreators->removeAt(_planCreators->count() - 1);
             }
         } else {
-            if (_planCreators->count() != 4) {
-                _planCreators->append(new StructureScanPlanCreator(this, this));
+            if (_planCreators->count() != 3) { //era 4
+                //_planCreators->append(new StructureScanPlanCreator(this, this));
+                _planCreators->append(new GranelPlanCreator(this, this));
             }
         }
     }

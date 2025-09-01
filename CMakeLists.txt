@@ -47,6 +47,7 @@ project(${QGC_APP_NAME}
 )
 
 if(ANDROID)
+
     set(QML_IMPORT_PATH
         ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/src/QmlControls/QGroundControl
@@ -62,6 +63,7 @@ if(ANDROID)
 
     set(QT_QML_IMPORT_PATH "${QML_IMPORT_PATH}")
     set(QT_QML_ROOT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
 endif()
 
 if(APPLE AND NOT IOS)
@@ -547,6 +549,10 @@ qt_add_qml_module(${CMAKE_PROJECT_NAME}
     VERSION 1.0
     RESOURCE_PREFIX /qml
     NO_PLUGIN
+    SOURCES src/MissionManager/TubetesComplexItem.h src/MissionManager/TubetesComplexItem.cc
+    SOURCES src/MissionManager/TubetesPlanCreator.h src/MissionManager/TubetesPlanCreator.cc
+    SOURCES src/MissionManager/GranelComplexItem.h src/MissionManager/GranelComplexItem.cc
+    SOURCES src/MissionManager/GranelPlanCreator.h src/MissionManager/GranelPlanCreator.cc
 )
 
 add_subdirectory(src)

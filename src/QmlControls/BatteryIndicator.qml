@@ -34,10 +34,15 @@ Item {
 
     property var    _activeVehicle:     QGroundControl.multiVehicleManager.activeVehicle
     property var    _batterySettings:   QGroundControl.settingsManager.batteryIndicatorSettings
-    property Fact   _indicatorDisplay:  _batterySettings.valueDisplay
-    property bool   _showPercentage:    _indicatorDisplay.rawValue === 0
-    property bool   _showVoltage:       _indicatorDisplay.rawValue === 1
-    property bool   _showBoth:          _indicatorDisplay.rawValue === 2
+    //property Fact   _indicatorDisplay:  _batterySettings.valueDisplay
+    //property bool   _showPercentage:    _indicatorDisplay.rawValue === 0
+    //property bool   _showVoltage:       _indicatorDisplay.rawValue === 1
+    //property bool   _showBoth:          _indicatorDisplay.rawValue === 2
+
+    property Fact   _indicatorDisplay:  _batterySettings.valueDisplay   // mantido por compatibilidade
+    property bool   _showPercentage:    false
+    property bool   _showVoltage:       true
+    property bool   _showBoth:          false
 
     // Properties to hold the thresholds
     property int threshold1: _batterySettings.threshold1.rawValue

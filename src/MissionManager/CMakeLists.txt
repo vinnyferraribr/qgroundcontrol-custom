@@ -73,6 +73,18 @@ target_sources(${CMAKE_PROJECT_NAME}
         VisualMissionItem.h
         VTOLLandingComplexItem.cc
         VTOLLandingComplexItem.h
+        #Tubetes
+        TubetesComplexItem.cc
+        TubetesComplexItem.h
+        TubetesPlanCreator.cc
+        TubetesPlanCreator.h
+        #Granel
+        GranelComplexItem.cc
+        GranelComplexItem.h
+        GranelPlanCreator.cc
+        GranelPlanCreator.h
+
+
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
