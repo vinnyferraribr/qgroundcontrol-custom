@@ -15,6 +15,8 @@
 #include "QGCApplication.h"
 #include "SimpleMissionItem.h"
 #include "SurveyComplexItem.h"
+#include "GranelComplexItem.h"
+#include "TubetesComplexItem.h"
 #include "FixedWingLandingComplexItem.h"
 #include "VTOLLandingComplexItem.h"
 #include "StructureScanComplexItem.h"
@@ -445,6 +447,15 @@ VisualMissionItem* MissionController::insertComplexMissionItem(QString itemName,
                 qobject_cast<SurveyComplexItem*>(newItem)->cameraCalc()->setDistanceMode(prevAltMode);
             }
         }
+    } else if (itemName == QStringLiteral("Granel")) {
+        // Ajuste a assinatura do construtor se o seu GranelComplexItem não receber o 3º argumento
+        newItem = new GranelComplexItem(_masterController, _flyView, QString());
+        newItem->setCoordinate(mapCenterCoordinate);
+
+    } else if (itemName == QStringLiteral("Tubetes")) {
+        // Ajuste a assinatura do construtor se o seu TubetesComplexItem não receber o 3º argumento
+        newItem = new TubetesComplexItem(_masterController, _flyView, QString());
+        newItem->setCoordinate(mapCenterCoordinate);
     } else if (itemName == FixedWingLandingComplexItem::name) {
         newItem = new FixedWingLandingComplexItem(_masterController, _flyView);
     } else if (itemName == VTOLLandingComplexItem::name) {
@@ -471,6 +482,11 @@ VisualMissionItem* MissionController::insertComplexMissionItemFromKMLOrSHP(QStri
         newItem = new SurveyComplexItem(_masterController, _flyView, file);
     } else if (itemName == StructureScanComplexItem::name) {
         newItem = new StructureScanComplexItem(_masterController, _flyView, file);
+    } else if (itemName == QStringLiteral("Granel")) {
+        newItem = new GranelComplexItem(_masterController, _flyView, file);
+
+    } else if (itemName == QStringLiteral("Tubetes")) {
+        newItem = new TubetesComplexItem(_masterController, _flyView, file);
     } else if (itemName == CorridorScanComplexItem::name) {
         newItem = new CorridorScanComplexItem(_masterController, _flyView, file);
     } else {
@@ -486,9 +502,12 @@ VisualMissionItem* MissionController::insertComplexMissionItemFromKMLOrSHP(QStri
 void MissionController::_insertComplexMissionItemWorker(const QGeoCoordinate& mapCenterCoordinate, ComplexMissionItem* complexItem, int visualItemIndex, bool makeCurrentItem)
 {
     int sequenceNumber = _nextSequenceNumber();
-    bool surveyStyleItem = qobject_cast<SurveyComplexItem*>(complexItem) ||
-            qobject_cast<CorridorScanComplexItem*>(complexItem) ||
-            qobject_cast<StructureScanComplexItem*>(complexItem);
+    bool surveyStyleItem =
+        qobject_cast<SurveyComplexItem*>(complexItem) ||
+        qobject_cast<CorridorScanComplexItem*>(complexItem) ||
+        qobject_cast<StructureScanComplexItem*>(complexItem) ||
+        qobject_cast<GranelComplexItem*>(complexItem) ||
+        qobject_cast<TubetesComplexItem*>(complexItem);
 
     if (surveyStyleItem) {
         bool rollSupported  = false;
@@ -547,7 +566,13 @@ void MissionController::removeVisualItem(int viIndex)
         return;
     }
 
-    bool removeSurveyStyle = _visualItems->value<SurveyComplexItem*>(viIndex) || _visualItems->value<CorridorScanComplexItem*>(viIndex);
+            // ⬇️ Inclua Granel e Tubetes aqui
+    bool removeSurveyStyle =
+        _visualItems->value<SurveyComplexItem*>(viIndex) ||
+        _visualItems->value<CorridorScanComplexItem*>(viIndex) ||
+        _visualItems->value<GranelComplexItem*>(viIndex) ||
+        _visualItems->value<TubetesComplexItem*>(viIndex);
+
     VisualMissionItem* item = qobject_cast<VisualMissionItem*>(_visualItems->removeAt(viIndex));
 
     if (item == _takeoffMissionItem) {
@@ -561,24 +586,32 @@ void MissionController::removeVisualItem(int viIndex)
         // Determine if the mission still has another survey style item in it
         bool foundSurvey = false;
         for (int i=1; i<_visualItems->count(); i++) {
-            if (_visualItems->value<SurveyComplexItem*>(i) || _visualItems->value<CorridorScanComplexItem*>(i)) {
+            // ⬇️ E aqui também
+            if (_visualItems->value<SurveyComplexItem*>(i) ||
+                _visualItems->value<CorridorScanComplexItem*>(i) ||
+                _visualItems->value<GranelComplexItem*>(i) ||
+                _visualItems->value<TubetesComplexItem*>(i)) {
                 foundSurvey = true;
                 break;
             }
         }
 
-        // If there is no longer a survey item in the mission remove added commands
+                // If there is no longer a survey item in the mission remove added commands
         if (!foundSurvey) {
             bool rollSupported = false;
             bool pitchSupported = false;
             bool yawSupported = false;
             CameraSection* cameraSection = _settingsItem->cameraSection();
             if (_controllerVehicle->firmwarePlugin()->hasGimbal(_controllerVehicle, rollSupported, pitchSupported, yawSupported) && pitchSupported) {
-                if (cameraSection->specifyGimbal() && cameraSection->gimbalPitch()->rawValue().toDouble() == -90.0 && cameraSection->gimbalYaw()->rawValue().toDouble() == 0.0) {
+                if (cameraSection->specifyGimbal() &&
+                    cameraSection->gimbalPitch()->rawValue().toDouble() == -90.0 &&
+                    cameraSection->gimbalYaw()->rawValue().toDouble() == 0.0) {
                     cameraSection->setSpecifyGimbal(false);
                 }
             }
-            if (cameraSection->cameraModeSupported() && cameraSection->specifyCameraMode() && cameraSection->cameraMode()->rawValue().toInt() == 0) {
+            if (cameraSection->cameraModeSupported() &&
+                cameraSection->specifyCameraMode() &&
+                cameraSection->cameraMode()->rawValue().toInt() == 0) {
                 cameraSection->setSpecifyCameraMode(false);
             }
         }
@@ -586,7 +619,7 @@ void MissionController::removeVisualItem(int viIndex)
 
     _recalcAll();
 
-    // Adjust current item
+            // Adjust current item
     int newVIIndex;
     if (viIndex >= _visualItems->count()) {
         newVIIndex = _visualItems->count() - 1;
@@ -623,21 +656,22 @@ bool MissionController::_loadJsonMissionFileV1(const QJsonObject& json, QmlObjec
 {
     // Validate root object keys
     QList<JsonHelper::KeyValidateInfo> rootKeyInfoList = {
-        { _jsonPlannedHomePositionKey,      QJsonValue::Object, true },
-        { _jsonItemsKey,                    QJsonValue::Array,  true },
-        { _jsonMavAutopilotKey,             QJsonValue::Double, true },
-        { _jsonComplexItemsKey,             QJsonValue::Array,  true },
-    };
+                                                          { _jsonPlannedHomePositionKey,      QJsonValue::Object, true },
+                                                          { _jsonItemsKey,                    QJsonValue::Array,  true },
+                                                          { _jsonMavAutopilotKey,             QJsonValue::Double, true },
+                                                          { _jsonComplexItemsKey,             QJsonValue::Array,  true },
+                                                          };
     if (!JsonHelper::validateKeys(json, rootKeyInfoList, errorString)) {
         return false;
     }
 
     setGlobalAltitudeMode(QGroundControlQmlGlobal::AltitudeModeMixed);
 
-    // Read complex items
-    QList<SurveyComplexItem*> surveyItems;
+            // Read complex items
+    QList<ComplexMissionItem*> complexItems;
     QJsonArray complexArray(json[_jsonComplexItemsKey].toArray());
     qCDebug(MissionControllerLog) << "Json load: complex item count" << complexArray.count();
+
     for (int i=0; i<complexArray.count(); i++) {
         const QJsonValue& itemValue = complexArray[i];
 
@@ -646,20 +680,35 @@ bool MissionController::_loadJsonMissionFileV1(const QJsonObject& json, QmlObjec
             return false;
         }
 
-        SurveyComplexItem* item = new SurveyComplexItem(_masterController, _flyView, QString() /* kmlOrShpFile */);
         const QJsonObject itemObject = itemValue.toObject();
-        if (item->load(itemObject, itemObject["id"].toInt(), errorString)) {
-            surveyItems.append(item);
+        QString complexType = itemObject[ComplexMissionItem::jsonComplexItemTypeKey].toString();
+
+        ComplexMissionItem* item = nullptr;
+
+        if (complexType == SurveyComplexItem::jsonComplexItemTypeValue) {
+            item = new SurveyComplexItem(_masterController, _flyView, QString());
+        } else if (complexType == GranelComplexItem::jsonComplexItemTypeValue) {
+            item = new GranelComplexItem(_masterController, _flyView, QString());
+        } else if (complexType == TubetesComplexItem::jsonComplexItemTypeValue) {
+            item = new TubetesComplexItem(_masterController, _flyView, QString());
+        }
+
+        if (item) {
+            if (item->load(itemObject, itemObject["id"].toInt(), errorString)) {
+                complexItems.append(item);
+            } else {
+                delete item;
+                return false;
+            }
         } else {
-            return false;
+            qWarning() << "Unknown complex item type" << complexType;
         }
     }
 
-    // Read simple items, interspersing complex items into the full list
-
-    int nextSimpleItemIndex= 0;
-    int nextComplexItemIndex= 0;
-    int nextSequenceNumber = 1; // Start with 1 since home is in 0
+            // Read simple items, interspersing complex items into the full list
+    int nextSimpleItemIndex = 0;
+    int nextComplexItemIndex = 0;
+    int nextSequenceNumber  = 1; // Start with 1 since home is in 0
     QJsonArray itemArray(json[_jsonItemsKey].toArray());
 
     MissionSettingsItem* settingsItem = _addMissionSettings(visualItems);
@@ -673,16 +722,20 @@ bool MissionController::_loadJsonMissionFileV1(const QJsonObject& json, QmlObjec
         }
     }
 
-    qCDebug(MissionControllerLog) << "Json load: simple item loop start simpleItemCount:ComplexItemCount" << itemArray.count() << surveyItems.count();
-    do {
-        qCDebug(MissionControllerLog) << "Json load: simple item loop nextSimpleItemIndex:nextComplexItemIndex:nextSequenceNumber" << nextSimpleItemIndex << nextComplexItemIndex << nextSequenceNumber;
+    qCDebug(MissionControllerLog) << "Json load: simple item loop start simpleItemCount:ComplexItemCount"
+                                  << itemArray.count() << complexItems.count();
 
-        // If there is a complex item that should be next in sequence add it in
-        if (nextComplexItemIndex < surveyItems.count()) {
-            SurveyComplexItem* complexItem = surveyItems[nextComplexItemIndex];
+    do {
+        qCDebug(MissionControllerLog) << "Json load: simple item loop nextSimpleItemIndex:nextComplexItemIndex:nextSequenceNumber"
+                                      << nextSimpleItemIndex << nextComplexItemIndex << nextSequenceNumber;
+
+                // If there is a complex item that should be next in sequence add it in
+        if (nextComplexItemIndex < complexItems.count()) {
+            ComplexMissionItem* complexItem = complexItems[nextComplexItemIndex];
 
             if (complexItem->sequenceNumber() == nextSequenceNumber) {
-                qCDebug(MissionControllerLog) << "Json load: injecting complex item expectedSequence:actualSequence:" << nextSequenceNumber << complexItem->sequenceNumber();
+                qCDebug(MissionControllerLog) << "Json load: injecting complex item expectedSequence:actualSequence:"
+                                              << nextSequenceNumber << complexItem->sequenceNumber();
                 visualItems->append(complexItem);
                 nextSequenceNumber = complexItem->lastSequenceNumber() + 1;
                 nextComplexItemIndex++;
@@ -690,7 +743,7 @@ bool MissionController::_loadJsonMissionFileV1(const QJsonObject& json, QmlObjec
             }
         }
 
-        // Add the next available simple item
+                // Add the next available simple item
         if (nextSimpleItemIndex < itemArray.count()) {
             const QJsonValue& itemValue = itemArray[nextSimpleItemIndex++];
 
@@ -709,14 +762,15 @@ bool MissionController::_loadJsonMissionFileV1(const QJsonObject& json, QmlObjec
                     item->deleteLater();
                     item = takeoffItem;
                 }
-                qCDebug(MissionControllerLog) << "Json load: adding simple item expectedSequence:actualSequence" << nextSequenceNumber << item->sequenceNumber();
+                qCDebug(MissionControllerLog) << "Json load: adding simple item expectedSequence:actualSequence"
+                                              << nextSequenceNumber << item->sequenceNumber();
                 nextSequenceNumber = item->lastSequenceNumber() + 1;
                 visualItems->append(item);
             } else {
                 return false;
             }
         }
-    } while (nextSimpleItemIndex < itemArray.count() || nextComplexItemIndex < surveyItems.count());
+    } while (nextSimpleItemIndex < itemArray.count() || nextComplexItemIndex < complexItems.count());
 
     return true;
 }
@@ -866,6 +920,25 @@ bool MissionController::_loadJsonMissionFileV2(const QJsonObject& json, QmlObjec
                 nextSequenceNumber = structureItem->lastSequenceNumber() + 1;
                 qCDebug(MissionControllerLog) << "Structure Scan load complete: nextSequenceNumber" << nextSequenceNumber;
                 visualItems->append(structureItem);
+            } else if (complexItemType == GranelComplexItem::jsonComplexItemTypeValue) {
+                qCDebug(MissionControllerLog) << "Loading Granel: nextSequenceNumber" << nextSequenceNumber;
+                GranelComplexItem* granelItem = new GranelComplexItem(_masterController, _flyView, QString());
+                if (!granelItem->load(itemObject, nextSequenceNumber++, errorString)) {
+                    return false;
+                }
+                nextSequenceNumber = granelItem->lastSequenceNumber() + 1;
+                qCDebug(MissionControllerLog) << "Granel load complete: nextSequenceNumber" << nextSequenceNumber;
+                visualItems->append(granelItem);
+
+            } else if (complexItemType == TubetesComplexItem::jsonComplexItemTypeValue) {
+                qCDebug(MissionControllerLog) << "Loading Tubetes: nextSequenceNumber" << nextSequenceNumber;
+                TubetesComplexItem* tubetesItem = new TubetesComplexItem(_masterController, _flyView, QString());
+                if (!tubetesItem->load(itemObject, nextSequenceNumber++, errorString)) {
+                    return false;
+                }
+                nextSequenceNumber = tubetesItem->lastSequenceNumber() + 1;
+                qCDebug(MissionControllerLog) << "Tubetes load complete: nextSequenceNumber" << nextSequenceNumber;
+                visualItems->append(tubetesItem);
             } else if (complexItemType == CorridorScanComplexItem::jsonComplexItemTypeValue) {
                 qCDebug(MissionControllerLog) << "Loading Corridor Scan: nextSequenceNumber" << nextSequenceNumber;
                 CorridorScanComplexItem* corridorItem = new CorridorScanComplexItem(_masterController, _flyView, QString() /* kmlOrShpFile */);
@@ -1281,9 +1354,9 @@ void MissionController::_recalcFlightPathSegments(void)
     // This is due to the initial implementation being buggy and incomplete with respect to correctly generating the line set.
     // So for now we leave the code for displaying them in, but none are ever added until we have time to implement the correct support.
 
-    _simpleFlightPathSegments.beginReset();
-    _directionArrows.beginReset();
-    _incompleteComplexItemLines.beginReset();
+    _simpleFlightPathSegments.beginResetModel();
+    _directionArrows.beginResetModel();
+    _incompleteComplexItemLines.beginResetModel();
 
     _simpleFlightPathSegments.clear();
     _directionArrows.clear();
@@ -1435,9 +1508,9 @@ void MissionController::_recalcFlightPathSegments(void)
         _directionArrows.append(coordVector);
     }
 
-    _simpleFlightPathSegments.endReset();
-    _directionArrows.endReset();
-    _incompleteComplexItemLines.endReset();
+    _simpleFlightPathSegments.endResetModel();
+    _directionArrows.endResetModel();
+    _incompleteComplexItemLines.endResetModel();
 
     // Anything left in the old table is an obsolete line object that can go
     qDeleteAll(oldSegmentTable);
@@ -2270,7 +2343,11 @@ QStringList MissionController::complexMissionItemNames(void) const
         complexItems.append(StructureScanComplexItem::name);
     }
 
-    // Note: The landing pattern items are not added here since they have there own button which adds them
+            // >>> Seus novos modos:
+    complexItems.append(GranelComplexItem::name);
+    complexItems.append(TubetesComplexItem::name);
+
+            // Note: The landing pattern items are not added here since they have their own button which adds them
 
     return QGCCorePlugin::instance()->complexMissionItemNames(_controllerVehicle, complexItems);
 }
@@ -2665,6 +2742,16 @@ void MissionController::_forceRecalcOfAllowedBits(void)
 QString MissionController::surveyComplexItemName(void) const
 {
     return SurveyComplexItem::name;
+}
+
+QString MissionController::tubetesComplexItemName(void) const
+{
+    return TubetesComplexItem::name;
+}
+
+QString MissionController::granelComplexItemName(void) const
+{
+    return GranelComplexItem::name;
 }
 
 QString MissionController::corridorScanComplexItemName(void) const

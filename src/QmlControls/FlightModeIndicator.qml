@@ -205,7 +205,8 @@ RowLayout {
 
                 RowLayout {
                     Layout.fillWidth:   true
-                    enabled:            control.allowEditMode
+                    //enabled:            control.allowEditMode
+                    enabled:            false
 
                     QGCLabel {
                         Layout.fillWidth:   true

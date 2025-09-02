@@ -31,8 +31,6 @@ endif()
 #                   Project Info
 #######################################################
 
-# include(Prechecks)
-
 # set(CMAKE_OSX_ARCHITECTURES "arm64")
 # set(CMAKE_OSX_SYSROOT "iphoneos")
 if(APPLE)
@@ -47,6 +45,26 @@ project(${QGC_APP_NAME}
     HOMEPAGE_URL ${QGC_ORG_DOMAIN}
     LANGUAGES C CXX
 )
+
+if(ANDROID)
+
+    set(QML_IMPORT_PATH
+        ${CMAKE_SOURCE_DIR}/src
+        ${CMAKE_SOURCE_DIR}/src/QmlControls/QGroundControl
+        ${CMAKE_SOURCE_DIR}/src/QmlControls/Viewer3D
+        ${CMAKE_SOURCE_DIR}/src/QmlControls/Viewer3D/Models3D
+        ${CMAKE_SOURCE_DIR}/src/QmlControls/Viewer3D/Models3D/Drones
+        ${CMAKE_SOURCE_DIR}/src/AutoPilotPlugins
+        ${CMAKE_SOURCE_DIR}/src/PlanView
+        ${CMAKE_SOURCE_DIR}/src/FlightMap
+        ${CMAKE_SOURCE_DIR}/src/Settings
+        ${CMAKE_SOURCE_DIR}/src/MAVLink
+    )
+
+    set(QT_QML_IMPORT_PATH "${QML_IMPORT_PATH}")
+    set(QT_QML_ROOT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src")
+
+endif()
 
 if(APPLE AND NOT IOS)
     set(MACOS TRUE)
@@ -301,6 +319,21 @@ qt_add_executable(${CMAKE_PROJECT_NAME}
     ${QGC_RESOURCES}
 )
 
+if(NOT_ANDROID)
+    target_link_libraries(${CMAKE_PROJECT_NAME}
+        PRIVATE
+            Qt6::WaylandClient
+            /usr/local/lib/libwayland-client.so
+    )
+endif()
+
+if(ANDROID)
+    set_target_properties(${CMAKE_PROJECT_NAME} PROPERTIES
+        QT_QML_IMPORT_PATH "${QML_IMPORT_PATH}"
+        QT_QML_ROOT_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src"
+    )
+endif()
+
 if(WIN32)
     # CPMAddPackage(
     #     NAME windows_drivers
@@ -415,21 +448,24 @@ elseif(APPLE)
         qt_add_ios_ffmpeg_libraries(${CMAKE_PROJECT_NAME})
     endif()
 elseif(ANDROID)
-    CPMAddPackage(
-        NAME android_openssl
-        URL https://github.com/KDAB/android_openssl/archive/refs/heads/master.zip
-    )
-    include(${android_openssl_SOURCE_DIR}/android_openssl.cmake)
-    add_android_openssl_libraries(${CMAKE_PROJECT_NAME})
+    if(${Qt6_VERSION} VERSION_EQUAL 6.6.3)
+        if(NOT ${CMAKE_ANDROID_NDK_VERSION} VERSION_EQUAL 25.1)
+            message(FATAL_ERROR "Invalid NDK Version: ${CMAKE_ANDROID_NDK_VERSION}, Use Version 25B instead.")
+        endif()
+    elseif(${Qt6_VERSION} VERSION_EQUAL 6.8.3)
+        if(NOT ${CMAKE_ANDROID_NDK_VERSION} VERSION_EQUAL 26.1)
+            message(FATAL_ERROR "Invalid NDK Version: ${CMAKE_ANDROID_NDK_VERSION}, Use Version 26B instead.")
+        endif()
+    endif()
 
     # Generation of android version numbers must be consistent release to release such that they are always increasing
-    if(${PROJECT_VERSION_MAJOR} GREATER 9)
+    if(${CMAKE_PROJECT_VERSION_MAJOR} GREATER 9)
         message(FATAL_ERROR "Major version larger than 1 digit: ${CMAKE_PROJECT_VERSION_MAJOR}")
     endif()
-    if(${PROJECT_VERSION_MINOR} GREATER 9)
+    if(${CMAKE_PROJECT_VERSION_MINOR} GREATER 9)
         message(FATAL_ERROR "Minor version larger than 1 digit: ${CMAKE_PROJECT_VERSION_MINOR}")
     endif()
-    if(${PROJECT_VERSION_PATCH} GREATER 99)
+    if(${CMAKE_PROJECT_VERSION_PATCH} GREATER 99)
         message(FATAL_ERROR "Patch version larger than 2 digits: ${CMAKE_PROJECT_VERSION_PATCH}")
     endif()
 
@@ -475,6 +511,13 @@ elseif(ANDROID)
     # endif()
 
     list(APPEND QT_ANDROID_MULTI_ABI_FORWARD_VARS QGC_STABLE_BUILD QT_HOST_PATH)
+
+    CPMAddPackage(
+        NAME android_openssl
+        URL https://github.com/KDAB/android_openssl/archive/refs/heads/master.zip
+    )
+    include(${android_openssl_SOURCE_DIR}/android_openssl.cmake)
+    add_android_openssl_libraries(${CMAKE_PROJECT_NAME})
 endif()
 
 target_compile_definitions(${CMAKE_PROJECT_NAME}
@@ -501,15 +544,27 @@ target_precompile_headers(${CMAKE_PROJECT_NAME}
         <QtCore/QTimer>
 )
 
+qt_add_qml_module(${CMAKE_PROJECT_NAME}
+    URI QGroundControl
+    VERSION 1.0
+    RESOURCE_PREFIX /qml
+    NO_PLUGIN
+    SOURCES src/MissionManager/TubetesComplexItem.h src/MissionManager/TubetesComplexItem.cc
+    SOURCES src/MissionManager/TubetesPlanCreator.h src/MissionManager/TubetesPlanCreator.cc
+    SOURCES src/MissionManager/GranelComplexItem.h src/MissionManager/GranelComplexItem.cc
+    SOURCES src/MissionManager/GranelPlanCreator.h src/MissionManager/GranelPlanCreator.cc
+)
+
 add_subdirectory(src)
 if(QGC_BUILD_TESTING)
     add_subdirectory(test)
 endif()
 
 if(QGC_CUSTOM_BUILD)
+    find_package(Qt6 REQUIRED COMPONENTS ${CUSTOM_QT_COMPONENTS})
     target_sources(${CMAKE_PROJECT_NAME} PRIVATE ${CUSTOM_SOURCES})
     target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE ${CUSTOM_LIBRARIES})
-    target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CUSTOM_DIRECTORIES})
+    target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CUSTOM_INCLUDE_DIRECTORIES})
 endif()
 
 file(GLOB TS_SOURCES ${CMAKE_SOURCE_DIR}/translations/qgc_*.ts)
@@ -533,6 +588,7 @@ qt_add_resources(${CMAKE_PROJECT_NAME} "qgcresources_cmake"
     FILES
         resources/qtquickcontrols2.conf
         ${SDL_GAMECONTROLLERDB_PATH}
+        ${QGC_GSTREAMER_SHADER_RESOURCES}
 )
 
 # cmake_print_variables(QT_ALL_PLUGIN_TYPES_FOUND_VIA_FIND_PACKAGE)

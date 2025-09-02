@@ -372,12 +372,12 @@ void FirmwarePlugin::_versionFileDownloadFinished(const QString &remoteFile, con
     const int currType = vehicle->firmwareVersionType();
 
     // Check if lower version than stable or same version but different type
-    if ((currType == FIRMWARE_VERSION_TYPE_OFFICIAL) && (vehicle->versionCompare(version) < 0)) {
+    /*if ((currType == FIRMWARE_VERSION_TYPE_OFFICIAL) && (vehicle->versionCompare(version) < 0)) {
         const QString currentVersionNumber = QStringLiteral("%1.%2.%3").arg(vehicle->firmwareMajorVersion())
                                                                        .arg(vehicle->firmwareMinorVersion())
                                                                        .arg(vehicle->firmwarePatchVersion());
         qgcApp()->showAppMessage(tr("Vehicle is not running latest stable firmware! Running %1, latest stable is %2.").arg(currentVersionNumber, version));
-    }
+    }*/
 }
 
 int FirmwarePlugin::versionCompare(const Vehicle *vehicle, int major, int minor, int patch) const
@@ -470,7 +470,8 @@ void FirmwarePlugin::_addNewFlightMode(FirmwareFlightMode &newFlightMode)
 {
     for (const FirmwareFlightMode &existingFlightMode : _flightModeList) {
         if (existingFlightMode.custom_mode == newFlightMode.custom_mode) {
-            // Already exists
+            qCDebug(FirmwarePluginLog) << "Flight Mode:" << newFlightMode.mode_name << " Custom Mode:" << newFlightMode.custom_mode
+                                       << " already exists, not adding again.";
             return;
         }
     }

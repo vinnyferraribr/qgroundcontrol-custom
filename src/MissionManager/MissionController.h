@@ -120,6 +120,12 @@ public:
     Q_PROPERTY(QGroundControlQmlGlobal::AltMode globalAltitudeMode         READ globalAltitudeMode         WRITE setGlobalAltitudeMode NOTIFY globalAltitudeModeChanged)
     Q_PROPERTY(QGroundControlQmlGlobal::AltMode globalAltitudeModeDefault  READ globalAltitudeModeDefault  NOTIFY globalAltitudeModeChanged)                               ///< Default to use for newly created items
 
+    QString granelComplexItemName()  const;
+    QString tubetesComplexItemName() const;
+
+    Q_PROPERTY(QString granelComplexItemName   READ granelComplexItemName   CONSTANT)
+    Q_PROPERTY(QString tubetesComplexItemName  READ tubetesComplexItemName  CONSTANT)
+
     Q_INVOKABLE void removeVisualItem(int viIndex);
 
     /// Add a new simple mission item to the list

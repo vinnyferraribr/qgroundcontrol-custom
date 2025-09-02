@@ -21,6 +21,7 @@ import QGroundControl.FactControls
 
 Item {
     id:             control
+    visible:        false
     width:          gimbalIndicatorIcon.width * 1.1 + gimbalTelemetryLayout.childrenRect.width + margins
     anchors.top:    parent.top
     anchors.bottom: parent.bottom

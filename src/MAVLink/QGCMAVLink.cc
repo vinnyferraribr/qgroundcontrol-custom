@@ -87,8 +87,8 @@ QGCMAVLink::~QGCMAVLink()
 QList<QGCMAVLink::FirmwareClass_t> QGCMAVLink::allFirmwareClasses(void)
 {
     static const QList<QGCMAVLink::FirmwareClass_t> classes = {
-        FirmwareClassPX4,
         FirmwareClassArduPilot,
+        FirmwareClassPX4,
         FirmwareClassGeneric
     };
 
